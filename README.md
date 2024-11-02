@@ -1,2 +1,2 @@
 # ECE759-EndProject
-ECE759 - High  Performance Computing Applications
+Final Project for ECE759 - High-Performance Computing Applications
