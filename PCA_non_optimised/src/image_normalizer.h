@@ -3,7 +3,7 @@
 
 #include <vector>
 
-// Function to normalize an image for PCA
-std::vector<float> normalize_image(std::vector<float>& image, int width, int height);
+// Function to normalize a grayscale image
+std::vector<float> normalize_image(const std::vector<float>& image);
 
 #endif // IMAGE_NORMALIZER_H

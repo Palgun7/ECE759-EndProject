@@ -1,11 +1,10 @@
 #include "image_reader.h"
-#include <iostream>
 #include <png.h>
 #include <stdexcept>
+#include <vector>
 
-// Function to read a PNG file and convert it to a floating point array
 std::vector<float> read_png_file(const char* file_name, int& width, int& height) {
-    FILE *fp = fopen(file_name, "rb");
+    FILE* fp = fopen(file_name, "rb");
     if (!fp) {
         throw std::runtime_error("Failed to open file");
     }
@@ -26,7 +25,7 @@ std::vector<float> read_png_file(const char* file_name, int& width, int& height)
     if (setjmp(png_jmpbuf(png))) {
         png_destroy_read_struct(&png, &info, NULL);
         fclose(fp);
-        throw std::runtime_error("Error during png creation");
+        throw std::runtime_error("Error during png read");
     }
 
     png_init_io(png, fp);
@@ -45,20 +44,12 @@ std::vector<float> read_png_file(const char* file_name, int& width, int& height)
         png_set_palette_to_rgb(png);
     }
 
+    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+        png_set_rgb_to_gray_fixed(png, 1, -1, -1); // Convert RGB to grayscale
+    }
+
     if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) {
         png_set_expand_gray_1_2_4_to_8(png);
-    }
-
-    if (png_get_valid(png, info, PNG_INFO_tRNS)) {
-        png_set_tRNS_to_alpha(png);
-    }
-
-    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_PALETTE) {
-        png_set_filler(png, 0xFF, PNG_FILLER_AFTER);
-    }
-
-    if (color_type == PNG_COLOR_TYPE_GRAY || color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
-        png_set_gray_to_rgb(png);
     }
 
     png_read_update_info(png, info);
@@ -70,14 +61,10 @@ std::vector<float> read_png_file(const char* file_name, int& width, int& height)
 
     png_read_image(png, row_pointers.data());
 
-    std::vector<float> raw_image(width * height * 4);
+    std::vector<float> image_data(width * height);
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            png_bytep px = &(row_pointers[y][x * 4]);
-            raw_image[(y * width + x) * 4 + 0] = px[0] / 255.0f;
-            raw_image[(y * width + x) * 4 + 1] = px[1] / 255.0f;
-            raw_image[(y * width + x) * 4 + 2] = px[2] / 255.0f;
-            raw_image[(y * width + x) * 4 + 3] = px[3] / 255.0f;
+            image_data[y * width + x] = row_pointers[y][x] / 255.0f;
         }
     }
 
@@ -88,18 +75,5 @@ std::vector<float> read_png_file(const char* file_name, int& width, int& height)
     png_destroy_read_struct(&png, &info, NULL);
     fclose(fp);
 
-    return raw_image;
-}
-
-// Function to print the image data
-void print_image(const std::vector<float>& raw_image, int width, int height) {
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            float r = raw_image[(y * width + x) * 4 + 0];
-            float g = raw_image[(y * width + x) * 4 + 1];
-            float b = raw_image[(y * width + x) * 4 + 2];
-            std::cout << "(" << r << ", " << g << ", " << b << ") ";
-        }
-        std::cout << std::endl;
-    }
+    return image_data;
 }
