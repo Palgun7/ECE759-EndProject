@@ -11,7 +11,7 @@ std::vector<std::vector<double>> compute_covariance_matrix(const std::vector<std
             for (size_t k = 0; k < rows; ++k) {
                 covariance_matrix[i][j] += X[k][i] * X[k][j];
             }
-            covariance_matrix[i][j] /= (rows - 1);
+            covariance_matrix[i][j] /= (rows);
         }
     }
 
