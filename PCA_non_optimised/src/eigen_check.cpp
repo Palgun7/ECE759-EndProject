@@ -1,4 +1,5 @@
 #include <iostream>
+<<<<<<< Updated upstream
 #include <vector>
 #include <cmath>
 
@@ -153,6 +154,25 @@ int main() {
     };
 
     computeEigenvaluesAndEigenvectors(covarianceMatrix);
+=======
+#include <eigen3/Eigen/Dense>
+
+int main() {
+    // Define the matrix
+    Eigen::Matrix3f matrix;
+    matrix << 4.0f, 1.0f, 2.0f,
+              1.0f, 3.0f, 0.0f,
+              2.0f, 0.0f, 2.0f;
+
+    // Compute the eigenvalues and eigenvectors
+    Eigen::EigenSolver<Eigen::Matrix3f> solver(matrix);
+
+    // Output the eigenvalues
+    std::cout << "Eigenvalues:\n" << solver.eigenvalues() << std::endl;
+
+    // Output the eigenvectors
+    std::cout << "Eigenvectors:\n" << solver.eigenvectors() << std::endl;
+>>>>>>> Stashed changes
 
     return 0;
 }
