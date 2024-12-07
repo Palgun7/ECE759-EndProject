@@ -1,0 +1,15 @@
+Image Dimensions: (100, 100)
+Pixel Matrix:
+[[224 226 226 ... 232 232 224]
+ [221 223 224 ... 231 231 227]
+ [217 219 219 ... 230 230 230]
+ ...
+ [ 21  19  21 ...  29  38  31]
+ [ 20  17  24 ...  38  31  29]
+ [ 17  20  20 ...  29  29  27]]
+
+Pixel Value Statistics:
+Min Value: 0
+Max Value: 245
+Mean Value: 104.02
+Standard Deviation: 87.96
