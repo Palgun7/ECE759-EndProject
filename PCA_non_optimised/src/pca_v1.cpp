@@ -1,268 +1,53 @@
+#include "image_reader.h"
+#include "image_splitter.h"
+#include "image_to_matrix.h"
 #include <iostream>
 #include <vector>
-#include <random>
-#include <cmath>
 #include <stdexcept>
+#include <filesystem>
+#include <algorithm>
+#include <numeric>
 #include <png.h>
-
+#include <cmath>
 
 using namespace std;
-
-// Function to read a PNG file and return the image data as a vector of floats
-// vector<float> read_png_file(const char* file_name, int& width, int& height) {
-//     FILE* fp = fopen(file_name, "rb");
-//     if (!fp) {
-//         throw runtime_error("Failed to open file");
-//     }
-
-//     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-//     if (!png) {
-//         fclose(fp);
-//         throw runtime_error("Failed to create png read struct");
-//     }
-
-//     png_infop info = png_create_info_struct(png);
-//     if (!info) {
-//         png_destroy_read_struct(&png, NULL, NULL);
-//         fclose(fp);
-//         throw runtime_error("Failed to create png info struct");
-//     }
-
-//     if (setjmp(png_jmpbuf(png))) {
-//         png_destroy_read_struct(&png, &info, NULL);
-//         fclose(fp);
-//         throw runtime_error("Error during png read");
-//     }
-
-//     png_init_io(png, fp);
-//     png_read_info(png, info);
-
-//     width = png_get_image_width(png, info);
-//     height = png_get_image_height(png, info);
-//     png_byte color_type = png_get_color_type(png, info);
-//     png_byte bit_depth = png_get_bit_depth(png, info);
-
-//     if (bit_depth == 16) {
-//         png_set_strip_16(png);
-//     }
-
-//     if (color_type == PNG_COLOR_TYPE_PALETTE) {
-//         png_set_palette_to_rgb(png);
-//     }
-
-//     if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-//         png_set_rgb_to_gray_fixed(png, 1, -1, -1); // Convert RGB to grayscale
-//     }
-
-//     if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) {
-//         png_set_expand_gray_1_2_4_to_8(png);
-//     }
-
-//     png_read_update_info(png, info);
-
-//     vector<png_bytep> row_pointers(height);
-//     for (int y = 0; y < height; y++) {
-//         row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
-//     }
-
-//     png_read_image(png, row_pointers.data());
-
-//     vector<float> image_data(width * height);
-//     for (int y = 0; y < height; y++) {
-//         for (int x = 0; x < width; x++) {
-//             image_data[y * width + x] = row_pointers[y][x] / 255.0f;
-//         }
-//     }
-
-//     for (int y = 0; y < height; y++) {
-//         free(row_pointers[y]);
-//     }
-
-//     png_destroy_read_struct(&png, &info, NULL);
-//     fclose(fp);
-
-//     return image_data;
-// }
-
-
-// vector<float> read_png_file(const char* file_name, int& width, int& height) {
-//     FILE* fp = fopen(file_name, "rb");
-//     // if (!fp) {
-//     //     throw runtime_error("Failed to open file");
-//     // }
-
-//     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-//     // if (!png) {
-//     //     fclose(fp);
-//     //     throw runtime_error("Failed to create png read struct");
-//     // }
-
-//     png_infop info = png_create_info_struct(png);
-//     // if (!info) {
-//     //     png_destroy_read_struct(&png, NULL, NULL);
-//     //     fclose(fp);
-//     //     throw runtime_error("Failed to create png info struct");
-//     // }
-
-//     // if (setjmp(png_jmpbuf(png))) {
-//     //     png_destroy_read_struct(&png, &info, NULL);
-//     //     fclose(fp);
-//     //     throw runtime_error("Error during png read");
-//     // }
-
-//     png_init_io(png, fp);
-//     png_read_info(png, info);
-
-//     width = png_get_image_width(png, info);
-//     height = png_get_image_height(png, info);
-//     // png_byte color_type = png_get_color_type(png, info);
-//     png_byte bit_depth = png_get_bit_depth(png, info);
-
-//     // Remove unnecessary transformations
-//     // png_set_strip_16(png);
-//     // png_set_rgb_to_gray_fixed(png, 1, -1, -1);
-//     // png_set_expand_gray_1_2_4_to_8(png);
-//     // png_set_palette_to_rgb(png);
-
-//     // png_read_update_info(png, info);
-
-//     vector<png_bytep> row_pointers(height);
-//     for (int y = 0; y < height; y++) {
-//         row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
-//     }
-
-//     png_read_image(png, row_pointers.data());
-
-//     vector<float> image_data;
-//     // if (bit_depth == 16) {
-//     //     image_data.resize(width * height);
-//     //     for (int y = 0; y < height; y++) {
-//     //         png_uint_16* row = (png_uint_16*)row_pointers[y];
-//     //         for (int x = 0; x < width; x++) {
-//     //             image_data[y * width + x] = row[x]; // Retain 16-bit data
-//     //         }
-//     //     }
-//     // } else {
-//         image_data.resize(width * height);
-//         for (int y = 0; y < height; y++) {
-//             for (int x = 0; x < width; x++) {
-//                 image_data[y * width + x] = row_pointers[y][x]; // Retain original 8-bit values
-//             }
-//         }
-//     // }
-
-//     for (int y = 0; y < height; y++) {
-//         free(row_pointers[y]);
-//     }
-
-//     png_destroy_read_struct(&png, &info, NULL);
-//     fclose(fp);
-
-//     return image_data;
-// }
-
-#include <fstream>
-#include <vector>
-#include <stdexcept>
-#include <iostream>
-
-// Function to read a grayscale .img file and convert it to a 1D matrix of intensities
-std::vector<float> read_png_file(const std::string& fileName, int& width, int& height) {
-    // Open the file in binary mode
-    std::ifstream file(fileName, std::ios::binary);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open the file: " + fileName);
-    }
-
-    // Calculate the total number of pixels
-    int numPixels = width * height;
-
-    // Allocate a buffer to store the pixel data
-    std::vector<unsigned char> pixelData(numPixels);
-
-    // Read the pixel data from the file
-    file.read(reinterpret_cast<char*>(pixelData.data()), numPixels);
-    if (file.gcount() != numPixels) {
-        throw std::runtime_error("File size does not match the expected dimensions.");
-    }
-
-    file.close();
-
-    // Convert the pixel data to a normalized 1D matrix of float intensities (0.0 to 1.0)
-    std::vector<float> intensityMatrix(numPixels);
-    for (int i = 0; i < numPixels; ++i) {
-        intensityMatrix[i] = pixelData[i] / 255.0f; // Normalize to [0, 1]
-    }
-
-    return intensityMatrix;
-}
-
-// int main() {
-//     try {
-//         // Example usage
-//         std::string fileName = "example.img";
-//         int width = 256; // Image width
-//         int height = 256; // Image height
-
-//         // Read the .img file and get the 1D intensity matrix
-//         std::vector<float> intensities = read_grayscale_img(fileName, width, height);
-
-//         // Print some of the intensities for demonstration
-//         for (int i = 0; i < 10; ++i) {
-//             std::cout << intensities[i] << " ";
-//         }
-//         std::cout << std::endl;
-
-//     } catch (const std::exception& e) {
-//         std::cerr << "Error: " << e.what() << std::endl;
-//     }
-
-//     return 0;
-// }
-
-
+namespace fs = std::filesystem;
 
 // Function to write a PNG file from image data
-void write_png_file(const char* file_name, const vector<float>& image_data, int width, int height) {
+void write_png_file(const char* file_name, const std::vector<float>& image_data, int width, int height) {
     FILE* fp = fopen(file_name, "wb");
     if (!fp) {
-        throw runtime_error("Failed to open file for writing");
+        throw std::runtime_error("Failed to open file for writing: " + std::string(file_name));
     }
 
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png) {
         fclose(fp);
-        throw runtime_error("Failed to create png write struct");
+        throw std::runtime_error("Failed to create PNG write struct.");
     }
 
     png_infop info = png_create_info_struct(png);
     if (!info) {
         png_destroy_write_struct(&png, NULL);
         fclose(fp);
-        throw runtime_error("Failed to create png info struct");
+        throw std::runtime_error("Failed to create PNG info struct.");
     }
 
     if (setjmp(png_jmpbuf(png))) {
         png_destroy_write_struct(&png, &info);
         fclose(fp);
-        throw runtime_error("Error during png write");
+        throw std::runtime_error("Error during PNG creation.");
     }
 
     png_init_io(png, fp);
 
-    png_set_IHDR(
-        png,
-        info,
-        width, height,
-        8,
-        PNG_COLOR_TYPE_GRAY,
-        PNG_INTERLACE_NONE,
-        PNG_COMPRESSION_TYPE_DEFAULT,
-        PNG_FILTER_TYPE_DEFAULT
-    );
+    // Set image properties
+    png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_GRAY,
+                 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
     png_write_info(png, info);
 
-    vector<png_bytep> row_pointers(height);
+    // Allocate memory for row pointers and fill them with image data
+    std::vector<png_bytep> row_pointers(height);
     for (int y = 0; y < height; y++) {
         row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
         for (int x = 0; x < width; x++) {
@@ -270,9 +55,11 @@ void write_png_file(const char* file_name, const vector<float>& image_data, int 
         }
     }
 
+    // Write the image data to the PNG file
     png_write_image(png, row_pointers.data());
     png_write_end(png, NULL);
 
+    // Free the allocated memory
     for (int y = 0; y < height; y++) {
         free(row_pointers[y]);
     }
@@ -353,7 +140,7 @@ vector<vector<float>> centerMatrix(const vector<vector<float>>& matrix, const ve
 }
 
 // Function to perform power iteration to find the largest eigenvalue and eigenvector
-pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, int maxIter = 10000000, float tol = 1e-7) {
+pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, int maxIter = 100000, float tol = 1e-6) {
     int n = matrix.size();
     vector<float> b(n, 1.0f); // Initial vector
     float eigenvalue = 0.0f;
@@ -403,6 +190,49 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
 }
 
 
+// Comparator struct to sort indices based on eigenvalues
+struct CompareEigenvalues {
+    const std::vector<float>& eigenvalues;
+    CompareEigenvalues(const std::vector<float>& eigenvalues) : eigenvalues(eigenvalues) {}
+    bool operator()(int a, int b) const {
+        return eigenvalues[a] > eigenvalues[b];
+    }
+};
+
+// Function to select the top N eigenvectors based on their eigenvalues
+std::vector<std::vector<float>> selectTopEigenvectors(const std::vector<std::vector<float>>& eigenvectors, const std::vector<float>& eigenvalues, int numComponents) {
+    // Debug output
+    std::cout << "Number of eigenvectors: " << eigenvectors.size() << std::endl;
+    std::cout << "Number of eigenvalues: " << eigenvalues.size() << std::endl;
+    std::cout << "Number of components requested: " << numComponents << std::endl;
+
+    // Ensure numComponents is within the valid range
+    if (numComponents > eigenvectors.size() || numComponents > eigenvalues.size()) {
+        throw std::invalid_argument("numComponents is larger than the number of available eigenvectors or eigenvalues.");
+    }
+
+    // Create a vector of indices
+    std::vector<int> indices(eigenvalues.size());
+    std::iota(indices.begin(), indices.end(), 0);
+
+    // Sort indices based on eigenvalues in descending order using the comparator struct
+    std::sort(indices.begin(), indices.end(), CompareEigenvalues(eigenvalues));
+
+    // Debug output
+    std::cout << "Indices sorted based on eigenvalues: ";
+    for (int index : indices) {
+        std::cout << index << " ";
+    }
+    std::cout << std::endl;
+
+    // Select the top numComponents eigenvectors
+    std::vector<std::vector<float>> topEigenvectors(numComponents);
+    for (int i = 0; i < numComponents; ++i) {
+        topEigenvectors[i] = eigenvectors[indices[i]];
+    }
+
+    return topEigenvectors;
+}
 
 // Function to project data onto the principal components
 vector<vector<float>> projectOntoPrincipalComponents(const vector<vector<float>>& centered, const vector<vector<float>>& eigenvectors) {
@@ -421,86 +251,115 @@ vector<vector<float>> projectOntoPrincipalComponents(const vector<vector<float>>
 }
 
 // Function to reconstruct data from the principal components
-vector<vector<float>> reconstructFromPrincipalComponents(const vector<vector<float>>& projected, const vector<vector<float>>& eigenvectors, const vector<float>& means) {
+std::vector<std::vector<float>> reconstructFromPrincipalComponents(const std::vector<std::vector<float>>& projected, const std::vector<std::vector<float>>& eigenvectors, const std::vector<float>& means) {
     int rows = projected.size();
     int cols = eigenvectors[0].size();
-    vector<vector<float>> reconstructed(rows, vector<float>(cols, 0.0f));
+    int numComponents = eigenvectors.size();
+    
+    std::vector<std::vector<float>> reconstructed(rows, std::vector<float>(cols, 0.0f));
 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            for (int k = 0; k < projected[0].size(); ++k) {
+            for (int k = 0; k < numComponents; ++k) {
                 reconstructed[i][j] += projected[i][k] * eigenvectors[k][j];
             }
             reconstructed[i][j] += means[j];
         }
     }
+
     return reconstructed;
 }
 
 int main(int argc, char* argv[]) {
-
-    int rows, cols;
-    const char* inputFileName = "../data/walk_small.png";
+    int imageWidth, imageHeight;
+    const char* inputFileName = "../data/man2.png";
     const char* outputFileName = "../data/output_image.png";
+    const int blockSize = 16; // Example block size
 
-    rows = 100;
-    cols = 100;
-    // Read image data
-    auto image_data = read_png_file(inputFileName, rows, cols);
+    // Read the image
+    auto imageData = read_png_file(inputFileName, imageWidth, imageHeight);
+    cout << "Image size : " << imageWidth << " x " <<imageHeight;
 
-    // Convert image data to matrix form
-    vector<vector<float>> data(rows, vector<float>(cols));
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            data[i][j] = image_data[i * cols + j];
-            cout<<data[i][j]<<" ";
-        }
-        cout<<endl;
+    // Ensure the image is square for simplicity
+    if (imageWidth != imageHeight) {
+        cerr << "Error: Image must be square." << endl;
+        return 1;
     }
 
+    // Split the image into smaller blocks
+    auto blocks = split_image(imageData, imageWidth, blockSize);
+
+    // Convert the blocks into a matrix
+    vector<vector<float>> imageMatrix;
+    for (const auto& block : blocks) {
+        imageMatrix.push_back(block);
+    }
+
+    // Ensure the matrix is suitable for PCA
+    int rows = imageMatrix.size();
+    int cols = blockSize * blockSize;
 
     // Center the data
-    // auto means = computeColumnMeans(data);
-    // auto centered = centerMatrix(data, means);
+    auto means = computeColumnMeans(imageMatrix);
+    auto centered = centerMatrix(imageMatrix, means);
 
-    // // Compute covariance matrix
-    // auto transposed = transpose(centered);
-    // auto covariance = multiply(transposed, centered);
+    // Compute covariance matrix
+    auto transposed = transpose(centered);
+    auto covariance = multiply(transposed, centered);
 
-    cout << "\nCovariance matrix:\n";
-    // printMatrix(covariance);
+    cout << "\nCovariance matrix calculated\n";
+    //printMatrix(covariance);
 
     // Perform power iteration for the largest eigenvalue and eigenvector
-    // auto [eigenvalue, eigenvector] = powerIteration(covariance);
+    auto [eigenvalue, eigenvector] = powerIteration(covariance);
+    std::cout << "Power Iteration Complete \n";
+    // Convert eigenvector to matrix form
+    vector<vector<float>> eigenvectors = {eigenvector};
+    vector<float> eigenvalues = {eigenvalue};
+    cout << "Eigen Values : " ;
+    for(int i; i < eigenvalues.size(); i++)
+    	cout << eigenvalues[i];
+    cout << "\n";
+    int numComponents = eigenvalues.size(); 
+    // Project the centered data onto the principal components
+    //std::vector<std::vector<float>> topEigenvectors = selectTopEigenvectors(eigenvectors, eigenvalues, numComponents);
+    try {
+    std::vector<std::vector<float>> topEigenvectors = selectTopEigenvectors(eigenvectors, eigenvalues, numComponents);
+    cout << "Feature vector size : " << topEigenvectors[0].size() << " x" << topEigenvectors.size()<<"\n";
+    auto projected = projectOntoPrincipalComponents(centered, topEigenvectors);
+    size_t numRows = projected.size();
+    size_t numCols = projected.empty() ? 0 : projected[0].size();
+    cout << "Projected vector size : " << numRows << " X " <<numCols;
+    
+    // Reconstruct the blocks from the principal components
+    auto reconstructedBlocks = reconstructFromPrincipalComponents(projected, topEigenvectors, means);
 
-    // // Convert eigenvector to matrix form
-    // vector<vector<float>> eigenvectors = {eigenvector};
-
-    // // Project the centered data onto the principal components
-    // auto projected = projectOntoPrincipalComponents(centered, eigenvectors);
-
-    // // Reconstruct the image from the principal components
-    // auto reconstructed = reconstructFromPrincipalComponents(projected, eigenvectors, means);
-
-    // Convert reconstructed matrix to image data
-    // vector<float> output_image_data(rows * cols);
-    // for (int i = 0; i < rows; ++i) {
-    //     for (int j = 0; j < cols; ++j) {
-    //         output_image_data[i * cols + j] = reconstructed[i][j];
-    //     }
-    // }
-
-    vector<float> output_image_data(rows * cols);
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            output_image_data[i * cols + j] = image_data[i * cols + j];
+    // Reassemble the blocks into the original image format
+    vector<float> output_image_data(imageWidth * imageHeight, 0.0f);
+    int numBlocks = imageWidth / blockSize;
+    for (int rowBlock = 0; rowBlock < numBlocks; ++rowBlock) {
+        for (int colBlock = 0; colBlock < numBlocks; ++colBlock) {
+            int blockIndex = rowBlock * numBlocks + colBlock;
+            const auto& block = reconstructedBlocks[blockIndex];
+            for (int i = 0; i < blockSize; ++i) {
+                for (int j = 0; j < blockSize; ++j) {
+                    int srcRow = rowBlock * blockSize + i;
+                    int srcCol = colBlock * blockSize + j;
+                   output_image_data[srcRow * imageWidth + srcCol] = block[i * blockSize + j];
+               }
+            }
         }
     }
 
     // Write the output image
-    write_png_file(outputFileName, output_image_data, cols, rows);
+    write_png_file(outputFileName, output_image_data, imageWidth, imageHeight);
 
-    cout << "Output image saved to " << outputFileName << endl;
+    cout << "\nOutput image saved to " << outputFileName << endl;
+
+
+     } catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+     }
 
     return 0;
 }
