@@ -4,6 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 #include <png.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -67,6 +68,7 @@ vector<float> read_png_file(const char* file_name, int& width, int& height) {
     png_read_image(png, row_pointers.data());
 
     vector<float> image_data(width * height);
+    #pragma omp parallel for
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             image_data[y * width + x] = row_pointers[y][x] / 255.0f;
@@ -126,6 +128,7 @@ void write_png_file(const char* file_name, const vector<float>& image_data, int 
     vector<png_bytep> row_pointers(height);
     for (int y = 0; y < height; y++) {
         row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
+        #pragma omp parallel for
         for (int x = 0; x < width; x++) {
             row_pointers[y][x] = static_cast<png_byte>(image_data[y * width + x] * 255.0f);
         }
@@ -158,6 +161,7 @@ vector<vector<float>> transpose(const vector<vector<float>>& matrix) {
     int cols = matrix[0].size();
     vector<vector<float>> transposed(cols, vector<float>(rows));
 
+    #pragma omp parallel for
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             transposed[j][i] = matrix[i][j];
@@ -174,6 +178,7 @@ vector<vector<float>> multiply(const vector<vector<float>>& A, const vector<vect
 
     vector<vector<float>> result(rows, vector<float>(cols, 0.0f));
 
+    #pragma omp parallel for
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             for (int k = 0; k < inner; ++k) {
@@ -190,6 +195,7 @@ vector<float> computeColumnMeans(const vector<vector<float>>& matrix) {
     int cols = matrix[0].size();
     vector<float> means(cols, 0.0f);
 
+    #pragma omp parallel for
     for (int j = 0; j < cols; ++j) {
         for (int i = 0; i < rows; ++i) {
             means[j] += matrix[i][j];
@@ -205,6 +211,7 @@ vector<vector<float>> centerMatrix(const vector<vector<float>>& matrix, const ve
     int cols = matrix[0].size();
     vector<vector<float>> centered(rows, vector<float>(cols));
 
+    #pragma omp parallel for
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             centered[i][j] = matrix[i][j] - means[j];
@@ -214,17 +221,15 @@ vector<vector<float>> centerMatrix(const vector<vector<float>>& matrix, const ve
 }
 
 // Function to perform power iteration to find the largest eigenvalue and eigenvector
-pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, int maxIter = 10000000, float tol = 1e-7) {
+pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, int maxIter = 1000, float tol = 1e-6) {
     int n = matrix.size();
     vector<float> b(n, 1.0f); // Initial vector
     float eigenvalue = 0.0f;
 
     for (int iter = 0; iter < maxIter; ++iter) {
-	if(iter%1000 == 0) 
-		cout << "|";
         vector<float> b_next(n, 0.0f);
 
-        // Multiply matrix with b
+        #pragma omp parallel for
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
                 b_next[i] += matrix[i][j] * b[j];
@@ -233,22 +238,26 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
 
         // Normalize b_next
         float norm = 0.0f;
+        #pragma omp parallel for reduction(+:norm)
         for (float val : b_next) {
             norm += val * val;
         }
         norm = sqrt(norm);
+        #pragma omp parallel for
         for (float& val : b_next) {
             val /= norm;
         }
 
         // Check for convergence
         float diff = 0.0f;
+        #pragma omp parallel for reduction(+:diff)
         for (int i = 0; i < n; ++i) {
             diff += abs(b_next[i] - b[i]);
         }
         if (diff < tol) {
             // Compute eigenvalue
             eigenvalue = 0.0f;
+	    #pragma omp parallel for reduction(+:eigenvalue)
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < n; ++j) {
                     eigenvalue += b_next[i] * matrix[i][j] * b_next[j];
@@ -258,99 +267,95 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
         }
         b = b_next;
     }
-
     cerr << "Power iteration did not converge!" << endl;
     return {eigenvalue, b};
 }
 
-
-
-// Function to project data onto the principal components
-vector<vector<float>> projectOntoPrincipalComponents(const vector<vector<float>>& centered, const vector<vector<float>>& eigenvectors) {
-    int rows = centered.size();
-    int numComponents = eigenvectors.size();
-    vector<vector<float>> projected(rows, vector<float>(numComponents, 0.0f));
-
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < numComponents; ++j) {
-            for (int k = 0; k < centered[0].size(); ++k) {
-                projected[i][j] += centered[i][k] * eigenvectors[j][k];
-            }
-        }
-    }
-    return projected;
-}
-
-// Function to reconstruct data from the principal components
-vector<vector<float>> reconstructFromPrincipalComponents(const vector<vector<float>>& projected, const vector<vector<float>>& eigenvectors, const vector<float>& means) {
-    int rows = projected.size();
-    int cols = eigenvectors[0].size();
-    vector<vector<float>> reconstructed(rows, vector<float>(cols, 0.0f));
-
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            for (int k = 0; k < projected[0].size(); ++k) {
-                reconstructed[i][j] += projected[i][k] * eigenvectors[k][j];
-            }
-            reconstructed[i][j] += means[j];
-        }
-    }
-    return reconstructed;
-}
-
 int main(int argc, char* argv[]) {
-
     int rows, cols;
-    const char* inputFileName = "../data/flower_small.png";
+    const char* inputFileName = "../data/walk_small.png";
     const char* outputFileName = "../data/output_image.png";
 
+    double start_time, end_time, total_time = 0.0;
+
     // Read image data
+    start_time = omp_get_wtime();
     auto image_data = read_png_file(inputFileName, rows, cols);
+    end_time = omp_get_wtime();
+    cout << "Time to read image: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
     // Convert image data to matrix form
+    start_time = omp_get_wtime();
     vector<vector<float>> data(rows, vector<float>(cols));
+    #pragma omp parallel for
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             data[i][j] = image_data[i * cols + j];
         }
     }
+    end_time = omp_get_wtime();
+    cout << "Time to convert image data to matrix: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
+    cout << "Image:\n";
+    printMatrix(data);
 
     // Center the data
+    start_time = omp_get_wtime();
     auto means = computeColumnMeans(data);
     auto centered = centerMatrix(data, means);
+    end_time = omp_get_wtime();
+    cout << "Time to center data: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
     // Compute covariance matrix
+    start_time = omp_get_wtime();
     auto transposed = transpose(centered);
     auto covariance = multiply(transposed, centered);
+    end_time = omp_get_wtime();
+    cout << "Time to compute covariance matrix: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
     cout << "\nCovariance matrix:\n";
     printMatrix(covariance);
 
     // Perform power iteration for the largest eigenvalue and eigenvector
+    start_time = omp_get_wtime();
     auto [eigenvalue, eigenvector] = powerIteration(covariance);
+    end_time = omp_get_wtime();
+    cout << "Time for power iteration: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
-    // Convert eigenvector to matrix form
-    vector<vector<float>> eigenvectors = {eigenvector};
+    cout << "\nLargest Eigenvalue: " << eigenvalue << endl;
+    cout << "Corresponding Eigenvector:\n";
+    for (float val : eigenvector) {
+        cout << val << " ";
+    }
+    cout << endl;
 
-    // Project the centered data onto the principal components
-    auto projected = projectOntoPrincipalComponents(centered, eigenvectors);
-
-    // Reconstruct the image from the principal components
-    auto reconstructed = reconstructFromPrincipalComponents(projected, eigenvectors, means);
-
-    // Convert reconstructed matrix to image data
+    // Regenerate the image from the centered data
+    start_time = omp_get_wtime();
     vector<float> output_image_data(rows * cols);
+    #pragma omp parallel for
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            output_image_data[i * cols + j] = reconstructed[i][j];
+            output_image_data[i * cols + j] = centered[i][j] + means[j];
         }
     }
+    end_time = omp_get_wtime();
+    cout << "Time to regenerate image: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
     // Write the output image
+    start_time = omp_get_wtime();
     write_png_file(outputFileName, output_image_data, cols, rows);
+    end_time = omp_get_wtime();
+    cout << "Time to write output image: " << (end_time - start_time) << " seconds" << endl;
+    total_time += (end_time - start_time);
 
     cout << "Output image saved to " << outputFileName << endl;
+    cout << "Total time: " << total_time << " seconds" << endl;
 
     return 0;
 }
