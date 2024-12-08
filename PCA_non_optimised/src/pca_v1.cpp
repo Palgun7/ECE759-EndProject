@@ -5,83 +5,222 @@
 #include <stdexcept>
 #include <png.h>
 
+
 using namespace std;
 
 // Function to read a PNG file and return the image data as a vector of floats
-vector<float> read_png_file(const char* file_name, int& width, int& height) {
-    FILE* fp = fopen(file_name, "rb");
-    if (!fp) {
-        throw runtime_error("Failed to open file");
+// vector<float> read_png_file(const char* file_name, int& width, int& height) {
+//     FILE* fp = fopen(file_name, "rb");
+//     if (!fp) {
+//         throw runtime_error("Failed to open file");
+//     }
+
+//     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+//     if (!png) {
+//         fclose(fp);
+//         throw runtime_error("Failed to create png read struct");
+//     }
+
+//     png_infop info = png_create_info_struct(png);
+//     if (!info) {
+//         png_destroy_read_struct(&png, NULL, NULL);
+//         fclose(fp);
+//         throw runtime_error("Failed to create png info struct");
+//     }
+
+//     if (setjmp(png_jmpbuf(png))) {
+//         png_destroy_read_struct(&png, &info, NULL);
+//         fclose(fp);
+//         throw runtime_error("Error during png read");
+//     }
+
+//     png_init_io(png, fp);
+//     png_read_info(png, info);
+
+//     width = png_get_image_width(png, info);
+//     height = png_get_image_height(png, info);
+//     png_byte color_type = png_get_color_type(png, info);
+//     png_byte bit_depth = png_get_bit_depth(png, info);
+
+//     if (bit_depth == 16) {
+//         png_set_strip_16(png);
+//     }
+
+//     if (color_type == PNG_COLOR_TYPE_PALETTE) {
+//         png_set_palette_to_rgb(png);
+//     }
+
+//     if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+//         png_set_rgb_to_gray_fixed(png, 1, -1, -1); // Convert RGB to grayscale
+//     }
+
+//     if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) {
+//         png_set_expand_gray_1_2_4_to_8(png);
+//     }
+
+//     png_read_update_info(png, info);
+
+//     vector<png_bytep> row_pointers(height);
+//     for (int y = 0; y < height; y++) {
+//         row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
+//     }
+
+//     png_read_image(png, row_pointers.data());
+
+//     vector<float> image_data(width * height);
+//     for (int y = 0; y < height; y++) {
+//         for (int x = 0; x < width; x++) {
+//             image_data[y * width + x] = row_pointers[y][x] / 255.0f;
+//         }
+//     }
+
+//     for (int y = 0; y < height; y++) {
+//         free(row_pointers[y]);
+//     }
+
+//     png_destroy_read_struct(&png, &info, NULL);
+//     fclose(fp);
+
+//     return image_data;
+// }
+
+
+// vector<float> read_png_file(const char* file_name, int& width, int& height) {
+//     FILE* fp = fopen(file_name, "rb");
+//     // if (!fp) {
+//     //     throw runtime_error("Failed to open file");
+//     // }
+
+//     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+//     // if (!png) {
+//     //     fclose(fp);
+//     //     throw runtime_error("Failed to create png read struct");
+//     // }
+
+//     png_infop info = png_create_info_struct(png);
+//     // if (!info) {
+//     //     png_destroy_read_struct(&png, NULL, NULL);
+//     //     fclose(fp);
+//     //     throw runtime_error("Failed to create png info struct");
+//     // }
+
+//     // if (setjmp(png_jmpbuf(png))) {
+//     //     png_destroy_read_struct(&png, &info, NULL);
+//     //     fclose(fp);
+//     //     throw runtime_error("Error during png read");
+//     // }
+
+//     png_init_io(png, fp);
+//     png_read_info(png, info);
+
+//     width = png_get_image_width(png, info);
+//     height = png_get_image_height(png, info);
+//     // png_byte color_type = png_get_color_type(png, info);
+//     png_byte bit_depth = png_get_bit_depth(png, info);
+
+//     // Remove unnecessary transformations
+//     // png_set_strip_16(png);
+//     // png_set_rgb_to_gray_fixed(png, 1, -1, -1);
+//     // png_set_expand_gray_1_2_4_to_8(png);
+//     // png_set_palette_to_rgb(png);
+
+//     // png_read_update_info(png, info);
+
+//     vector<png_bytep> row_pointers(height);
+//     for (int y = 0; y < height; y++) {
+//         row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
+//     }
+
+//     png_read_image(png, row_pointers.data());
+
+//     vector<float> image_data;
+//     // if (bit_depth == 16) {
+//     //     image_data.resize(width * height);
+//     //     for (int y = 0; y < height; y++) {
+//     //         png_uint_16* row = (png_uint_16*)row_pointers[y];
+//     //         for (int x = 0; x < width; x++) {
+//     //             image_data[y * width + x] = row[x]; // Retain 16-bit data
+//     //         }
+//     //     }
+//     // } else {
+//         image_data.resize(width * height);
+//         for (int y = 0; y < height; y++) {
+//             for (int x = 0; x < width; x++) {
+//                 image_data[y * width + x] = row_pointers[y][x]; // Retain original 8-bit values
+//             }
+//         }
+//     // }
+
+//     for (int y = 0; y < height; y++) {
+//         free(row_pointers[y]);
+//     }
+
+//     png_destroy_read_struct(&png, &info, NULL);
+//     fclose(fp);
+
+//     return image_data;
+// }
+
+#include <fstream>
+#include <vector>
+#include <stdexcept>
+#include <iostream>
+
+// Function to read a grayscale .img file and convert it to a 1D matrix of intensities
+std::vector<float> read_png_file(const std::string& fileName, int& width, int& height) {
+    // Open the file in binary mode
+    std::ifstream file(fileName, std::ios::binary);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open the file: " + fileName);
     }
 
-    png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    if (!png) {
-        fclose(fp);
-        throw runtime_error("Failed to create png read struct");
+    // Calculate the total number of pixels
+    int numPixels = width * height;
+
+    // Allocate a buffer to store the pixel data
+    std::vector<unsigned char> pixelData(numPixels);
+
+    // Read the pixel data from the file
+    file.read(reinterpret_cast<char*>(pixelData.data()), numPixels);
+    if (file.gcount() != numPixels) {
+        throw std::runtime_error("File size does not match the expected dimensions.");
     }
 
-    png_infop info = png_create_info_struct(png);
-    if (!info) {
-        png_destroy_read_struct(&png, NULL, NULL);
-        fclose(fp);
-        throw runtime_error("Failed to create png info struct");
+    file.close();
+
+    // Convert the pixel data to a normalized 1D matrix of float intensities (0.0 to 1.0)
+    std::vector<float> intensityMatrix(numPixels);
+    for (int i = 0; i < numPixels; ++i) {
+        intensityMatrix[i] = pixelData[i] / 255.0f; // Normalize to [0, 1]
     }
 
-    if (setjmp(png_jmpbuf(png))) {
-        png_destroy_read_struct(&png, &info, NULL);
-        fclose(fp);
-        throw runtime_error("Error during png read");
-    }
-
-    png_init_io(png, fp);
-    png_read_info(png, info);
-
-    width = png_get_image_width(png, info);
-    height = png_get_image_height(png, info);
-    png_byte color_type = png_get_color_type(png, info);
-    png_byte bit_depth = png_get_bit_depth(png, info);
-
-    if (bit_depth == 16) {
-        png_set_strip_16(png);
-    }
-
-    if (color_type == PNG_COLOR_TYPE_PALETTE) {
-        png_set_palette_to_rgb(png);
-    }
-
-    if (color_type == PNG_COLOR_TYPE_RGB || color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-        png_set_rgb_to_gray_fixed(png, 1, -1, -1); // Convert RGB to grayscale
-    }
-
-    if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) {
-        png_set_expand_gray_1_2_4_to_8(png);
-    }
-
-    png_read_update_info(png, info);
-
-    vector<png_bytep> row_pointers(height);
-    for (int y = 0; y < height; y++) {
-        row_pointers[y] = (png_bytep)malloc(png_get_rowbytes(png, info));
-    }
-
-    png_read_image(png, row_pointers.data());
-
-    vector<float> image_data(width * height);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            image_data[y * width + x] = row_pointers[y][x] / 255.0f;
-        }
-    }
-
-    for (int y = 0; y < height; y++) {
-        free(row_pointers[y]);
-    }
-
-    png_destroy_read_struct(&png, &info, NULL);
-    fclose(fp);
-
-    return image_data;
+    return intensityMatrix;
 }
+
+// int main() {
+//     try {
+//         // Example usage
+//         std::string fileName = "example.img";
+//         int width = 256; // Image width
+//         int height = 256; // Image height
+
+//         // Read the .img file and get the 1D intensity matrix
+//         std::vector<float> intensities = read_grayscale_img(fileName, width, height);
+
+//         // Print some of the intensities for demonstration
+//         for (int i = 0; i < 10; ++i) {
+//             std::cout << intensities[i] << " ";
+//         }
+//         std::cout << std::endl;
+
+//     } catch (const std::exception& e) {
+//         std::cerr << "Error: " << e.what() << std::endl;
+//     }
+
+//     return 0;
+// }
+
+
 
 // Function to write a PNG file from image data
 void write_png_file(const char* file_name, const vector<float>& image_data, int width, int height) {
@@ -301,9 +440,11 @@ vector<vector<float>> reconstructFromPrincipalComponents(const vector<vector<flo
 int main(int argc, char* argv[]) {
 
     int rows, cols;
-    const char* inputFileName = "../data/flower_small.png";
+    const char* inputFileName = "../data/walk_small.png";
     const char* outputFileName = "../data/output_image.png";
 
+    rows = 100;
+    cols = 100;
     // Read image data
     auto image_data = read_png_file(inputFileName, rows, cols);
 
@@ -312,38 +453,47 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             data[i][j] = image_data[i * cols + j];
+            cout<<data[i][j]<<" ";
         }
+        cout<<endl;
     }
 
 
     // Center the data
-    auto means = computeColumnMeans(data);
-    auto centered = centerMatrix(data, means);
+    // auto means = computeColumnMeans(data);
+    // auto centered = centerMatrix(data, means);
 
-    // Compute covariance matrix
-    auto transposed = transpose(centered);
-    auto covariance = multiply(transposed, centered);
+    // // Compute covariance matrix
+    // auto transposed = transpose(centered);
+    // auto covariance = multiply(transposed, centered);
 
     cout << "\nCovariance matrix:\n";
-    printMatrix(covariance);
+    // printMatrix(covariance);
 
     // Perform power iteration for the largest eigenvalue and eigenvector
-    auto [eigenvalue, eigenvector] = powerIteration(covariance);
+    // auto [eigenvalue, eigenvector] = powerIteration(covariance);
 
-    // Convert eigenvector to matrix form
-    vector<vector<float>> eigenvectors = {eigenvector};
+    // // Convert eigenvector to matrix form
+    // vector<vector<float>> eigenvectors = {eigenvector};
 
-    // Project the centered data onto the principal components
-    auto projected = projectOntoPrincipalComponents(centered, eigenvectors);
+    // // Project the centered data onto the principal components
+    // auto projected = projectOntoPrincipalComponents(centered, eigenvectors);
 
-    // Reconstruct the image from the principal components
-    auto reconstructed = reconstructFromPrincipalComponents(projected, eigenvectors, means);
+    // // Reconstruct the image from the principal components
+    // auto reconstructed = reconstructFromPrincipalComponents(projected, eigenvectors, means);
 
     // Convert reconstructed matrix to image data
+    // vector<float> output_image_data(rows * cols);
+    // for (int i = 0; i < rows; ++i) {
+    //     for (int j = 0; j < cols; ++j) {
+    //         output_image_data[i * cols + j] = reconstructed[i][j];
+    //     }
+    // }
+
     vector<float> output_image_data(rows * cols);
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            output_image_data[i * cols + j] = reconstructed[i][j];
+            output_image_data[i * cols + j] = image_data[i * cols + j];
         }
     }
 
