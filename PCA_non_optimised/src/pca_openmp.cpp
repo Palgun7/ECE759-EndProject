@@ -11,13 +11,13 @@
 #include <png.h>
 #include <cmath>
 #include <chrono>
+#include <omp.h>
 
 using namespace std;
 using std::chrono::high_resolution_clock;
 using std::chrono::duration;
 namespace fs = std::filesystem;
 
-// Function to print a matrix
 void printMatrix(const vector<vector<float>>& matrix) {
     for (const auto& row : matrix) {
         for (float val : row) {
@@ -33,6 +33,7 @@ vector<vector<float>> transpose(const vector<vector<float>>& matrix) {
     int cols = matrix[0].size();
     vector<vector<float>> transposed(cols, vector<float>(rows));
 
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             transposed[j][i] = matrix[i][j];
@@ -49,6 +50,7 @@ vector<vector<float>> multiply(const vector<vector<float>>& A, const vector<vect
 
     vector<vector<float>> result(rows, vector<float>(cols, 0.0f));
 
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             for (int k = 0; k < inner; ++k) {
@@ -65,6 +67,7 @@ vector<float> computeColumnMeans(const vector<vector<float>>& matrix) {
     int cols = matrix[0].size();
     vector<float> means(cols, 0.0f);
 
+    #pragma omp parallel for
     for (int j = 0; j < cols; ++j) {
         for (int i = 0; i < rows; ++i) {
             means[j] += matrix[i][j];
@@ -80,6 +83,7 @@ vector<vector<float>> centerMatrix(const vector<vector<float>>& matrix, const ve
     int cols = matrix[0].size();
     vector<vector<float>> centered(rows, vector<float>(cols));
 
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             centered[i][j] = matrix[i][j] - means[j];
@@ -95,11 +99,11 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
     float eigenvalue = 0.0f;
 
     for (int iter = 0; iter < maxIter; ++iter) {
-	if(iter%1000 == 0) 
-		cout << "|";
+        if(iter % 1000 == 0) 
+            cout << "|";
         vector<float> b_next(n, 0.0f);
 
-        // Multiply matrix with b
+        #pragma omp parallel for
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
                 b_next[i] += matrix[i][j] * b[j];
@@ -108,22 +112,26 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
 
         // Normalize b_next
         float norm = 0.0f;
+        #pragma omp parallel for reduction(+:norm)
         for (float val : b_next) {
             norm += val * val;
         }
         norm = sqrt(norm);
+        #pragma omp parallel for
         for (float& val : b_next) {
             val /= norm;
         }
 
         // Check for convergence
         float diff = 0.0f;
+        #pragma omp parallel for reduction(+:diff)
         for (int i = 0; i < n; ++i) {
             diff += abs(b_next[i] - b[i]);
         }
         if (diff < tol) {
             // Compute eigenvalue
             eigenvalue = 0.0f;
+            #pragma omp parallel for reduction(+:eigenvalue)
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < n; ++j) {
                     eigenvalue += b_next[i] * matrix[i][j] * b_next[j];
@@ -138,7 +146,6 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
     return {eigenvalue, b};
 }
 
-
 // Comparator struct to sort indices based on eigenvalues
 struct CompareEigenvalues {
     const std::vector<float>& eigenvalues;
@@ -150,11 +157,6 @@ struct CompareEigenvalues {
 
 // Function to select the top N eigenvectors based on their eigenvalues
 std::vector<std::vector<float>> selectTopEigenvectors(const std::vector<std::vector<float>>& eigenvectors, const std::vector<float>& eigenvalues, int numComponents) {
-    // Debug output
-    //std::cout << "Number of eigenvectors: " << eigenvectors.size() << std::endl;
-    //std::cout << "Number of eigenvalues: " << eigenvalues.size() << std::endl;
-    //std::cout << "Number of components requested: " << numComponents << std::endl;
-
     // Ensure numComponents is within the valid range
     if (numComponents > eigenvectors.size() || numComponents > eigenvalues.size()) {
         throw std::invalid_argument("numComponents is larger than the number of available eigenvectors or eigenvalues.");
@@ -167,15 +169,9 @@ std::vector<std::vector<float>> selectTopEigenvectors(const std::vector<std::vec
     // Sort indices based on eigenvalues in descending order using the comparator struct
     std::sort(indices.begin(), indices.end(), CompareEigenvalues(eigenvalues));
 
-    // Debug output
-    std::cout << "Indices sorted based on eigenvalues: ";
-    for (int index : indices) {
-        std::cout << index << " ";
-    }
-    std::cout << std::endl;
-
     // Select the top numComponents eigenvectors
     std::vector<std::vector<float>> topEigenvectors(numComponents);
+    #pragma omp parallel for
     for (int i = 0; i < numComponents; ++i) {
         topEigenvectors[i] = eigenvectors[indices[i]];
     }
@@ -189,6 +185,7 @@ vector<vector<float>> projectOntoPrincipalComponents(const vector<vector<float>>
     int numComponents = eigenvectors.size();
     vector<vector<float>> projected(rows, vector<float>(numComponents, 0.0f));
 
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < numComponents; ++j) {
             for (int k = 0; k < centered[0].size(); ++k) {
@@ -207,6 +204,7 @@ std::vector<std::vector<float>> reconstructFromPrincipalComponents(const std::ve
     
     std::vector<std::vector<float>> reconstructed(rows, std::vector<float>(cols, 0.0f));
 
+    #pragma omp parallel for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             for (int k = 0; k < numComponents; ++k) {
