@@ -214,12 +214,14 @@ vector<vector<float>> centerMatrix(const vector<vector<float>>& matrix, const ve
 }
 
 // Function to perform power iteration to find the largest eigenvalue and eigenvector
-pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, int maxIter = 1000, float tol = 1e-6) {
+pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, int maxIter = 10000000, float tol = 1e-7) {
     int n = matrix.size();
     vector<float> b(n, 1.0f); // Initial vector
     float eigenvalue = 0.0f;
 
     for (int iter = 0; iter < maxIter; ++iter) {
+	if(iter%1000 == 0) 
+		cout << "|";
         vector<float> b_next(n, 0.0f);
 
         // Multiply matrix with b
@@ -261,7 +263,43 @@ pair<float, vector<float>> powerIteration(const vector<vector<float>>& matrix, i
     return {eigenvalue, b};
 }
 
+
+
+// Function to project data onto the principal components
+vector<vector<float>> projectOntoPrincipalComponents(const vector<vector<float>>& centered, const vector<vector<float>>& eigenvectors) {
+    int rows = centered.size();
+    int numComponents = eigenvectors.size();
+    vector<vector<float>> projected(rows, vector<float>(numComponents, 0.0f));
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < numComponents; ++j) {
+            for (int k = 0; k < centered[0].size(); ++k) {
+                projected[i][j] += centered[i][k] * eigenvectors[j][k];
+            }
+        }
+    }
+    return projected;
+}
+
+// Function to reconstruct data from the principal components
+vector<vector<float>> reconstructFromPrincipalComponents(const vector<vector<float>>& projected, const vector<vector<float>>& eigenvectors, const vector<float>& means) {
+    int rows = projected.size();
+    int cols = eigenvectors[0].size();
+    vector<vector<float>> reconstructed(rows, vector<float>(cols, 0.0f));
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            for (int k = 0; k < projected[0].size(); ++k) {
+                reconstructed[i][j] += projected[i][k] * eigenvectors[k][j];
+            }
+            reconstructed[i][j] += means[j];
+        }
+    }
+    return reconstructed;
+}
+
 int main(int argc, char* argv[]) {
+
     int rows, cols;
     const char* inputFileName = "../data/flower_small.png";
     const char* outputFileName = "../data/output_image.png";
@@ -277,8 +315,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cout << "Image:\n";
-    printMatrix(data);
 
     // Center the data
     auto means = computeColumnMeans(data);
@@ -294,18 +330,20 @@ int main(int argc, char* argv[]) {
     // Perform power iteration for the largest eigenvalue and eigenvector
     auto [eigenvalue, eigenvector] = powerIteration(covariance);
 
-    cout << "\nLargest Eigenvalue: " << eigenvalue << endl;
-    cout << "Corresponding Eigenvector:\n";
-    for (float val : eigenvector) {
-        cout << val << " ";
-    }
-    cout << endl;
+    // Convert eigenvector to matrix form
+    vector<vector<float>> eigenvectors = {eigenvector};
 
-    // Regenerate the image from the centered data
+    // Project the centered data onto the principal components
+    auto projected = projectOntoPrincipalComponents(centered, eigenvectors);
+
+    // Reconstruct the image from the principal components
+    auto reconstructed = reconstructFromPrincipalComponents(projected, eigenvectors, means);
+
+    // Convert reconstructed matrix to image data
     vector<float> output_image_data(rows * cols);
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
-            output_image_data[i * cols + j] = centered[i][j] + means[j];
+            output_image_data[i * cols + j] = reconstructed[i][j];
         }
     }
 
