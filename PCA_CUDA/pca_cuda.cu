@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <numeric>
 
+using namespace std;
+
 // CUDA kernel for matrix transpose
 __global__ void transposeKernel(const float* input, float* output, int rows, int cols) {
     // Calculate the row and column index of the element
@@ -415,12 +417,15 @@ std::vector<float> pca(vector<vector<float>> imageMatrix, int blockSize, int ima
     int cols = blockSize * blockSize;
 
     // Center the data
-    auto means = computeColumnMeansCUDA(imageMatrix);
-    auto centered = centerMatrixCUDA(imageMatrix, means);
+    std::vector<float> columnMeans;
+    computeColumnMeansCUDA(imageMatrix, columnMeans);
+    auto centered = centerMatrixCUDA(imageMatrix, columnMeans);
 
     // Compute covariance matrix
-    auto transposed = transposeCUDA(centered);
-    auto covariance = matrixMultiplyCUDA(transposed, centered);
+    std::vector<std::vector<float>> transposed;
+    transposeCUDA(centered, transposed);
+    std::vector<std::vector<float>> covariance;
+    matrixMultiplyCUDA(transposed, centered, covariance);
 
     // cout << "\nCovariance matrix calculated\n";
 
