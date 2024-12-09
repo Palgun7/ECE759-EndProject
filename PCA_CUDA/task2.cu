@@ -4,7 +4,8 @@
 #include <chrono>
 #include <ratio>
 #include <vector>
-#include "pca.h"
+#include <cuda.h>
+#include "pca_cuda.h"
 using std::chrono::duration;
 using std::chrono::high_resolution_clock;
 
@@ -12,10 +13,12 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-    // declarations needed for timer
-    high_resolution_clock::time_point start;
-    high_resolution_clock::time_point end;
-    duration<double, std::milli> duration_sec;
+   cudaEvent_t start;
+    cudaEvent_t stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    // Get the elapsed time in milliseconds
+    float ms;
 
     // image dimension
     size_t img_dim = atoi(argv[1]);
@@ -45,17 +48,20 @@ int main(int argc, char *argv[])
 
     cout<<"before calculation"<<endl;
     ////////////////// Get the starting timestamp //////////////////
-    start = high_resolution_clock::now();
+    cudaEventRecord(start);
     vector<float> output = pca(arr, block_dim, img_dim, img_dim);
-    end = high_resolution_clock::now();
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
     ///////////////////////////////////////////////////////////////
 
     // Convert the calculated duration to a double
-    duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end - start);
-    cout <<"\n"<< duration_sec.count() << endl;
+    cudaEventElapsedTime(&ms, start, stop);
+    std::cout << ms << std::endl;
     
     cout<<"after calculation"<<endl;
     
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
     return 0;
 }
