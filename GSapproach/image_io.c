@@ -1,4 +1,4 @@
-#include "lab2_io.h"
+#include "image_io.h"
 
 void read_matrix (const char* input_filename, int* M, int* N, float** D){
 	FILE *fin = fopen(input_filename, "r");

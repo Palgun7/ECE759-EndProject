@@ -1,5 +1,5 @@
-#include "lab2_io.h"
-#include "lab2_omp.h"
+#include "image_io.h"
+#include "functions_omp.h"
 
 #include <stdlib.h>
 #include <omp.h>

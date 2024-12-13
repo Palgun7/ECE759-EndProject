@@ -1,5 +1,5 @@
-#ifndef LAB2_IO_H
-#define LAB2_IO_H
+#ifndef IMAGE_IO_H
+#define IMAGE_IO_H
 
 #include <stdio.h>
 #include <malloc.h>
