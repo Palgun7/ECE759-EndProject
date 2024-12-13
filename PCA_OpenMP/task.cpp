@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     cout << "before calculation" << endl;
     ////////////////// Get the starting timestamp //////////////////
     start = high_resolution_clock::now();
-    omp_set_num_threads(thread_num);
+    //omp_set_num_threads(thread_num);
 #pragma omp parallel
     {
         vector<float> output = pca(arr, block_dim, img_dim, img_dim);
