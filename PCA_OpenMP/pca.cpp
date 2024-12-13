@@ -449,20 +449,20 @@ std::vector<float> pca(vector<vector<float>> imageMatrix, int blockSize, int ima
     // cout << "\nCovariance matrix calculated\n";
 
     // Perform power iteration for the largest eigenvalue and eigenvector
-    auto [eigenvalue, eigenvector] = powerIteration(covariance);
-    // std::cout << "Power Iteration Complete \n";
+    // auto [eigenvalue, eigenvector] = powerIteration(covariance);
+    // // std::cout << "Power Iteration Complete \n";
 
-    // Convert eigenvector to matrix form
-    vector<vector<float>> eigenvectors = {eigenvector};
-    vector<float> eigenvalues = {eigenvalue};
+    // // Convert eigenvector to matrix form
+    // vector<vector<float>> eigenvectors = {eigenvector};
+    // vector<float> eigenvalues = {eigenvalue};
 
-    // cout << "Eigen Values : ";
-    // for (int i; i < eigenvalues.size(); i++)
-    // {
-    //     cout << eigenvalues[i];
-    // }
-    // cout << "\n";
-    int numComponents = eigenvalues.size();
+    // // cout << "Eigen Values : ";
+    // // for (int i; i < eigenvalues.size(); i++)
+    // // {
+    // //     cout << eigenvalues[i];
+    // // }
+    // // cout << "\n";
+    // int numComponents = eigenvalues.size();
 
     // std::vector<std::vector<float>> topEigenvectors = selectTopEigenvectors(eigenvectors, eigenvalues, numComponents);
     // cout << "Feature vector size : " << topEigenvectors[0].size() << " x" << topEigenvectors.size() << "\n";
