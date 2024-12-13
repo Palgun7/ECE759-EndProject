@@ -4,3 +4,4 @@ The following have been reloaded with a version change:
 
 pca_cuda.cu(417): warning #177-D: variable "cols" was declared but never referenced
 
+Power iteration did not converge!
