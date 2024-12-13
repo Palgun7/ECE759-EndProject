@@ -244,9 +244,10 @@ vector<vector<float>> transpose(const vector<vector<float>>& matrix) {
     int cols = matrix[0].size();
     vector<vector<float>> transposed(cols, vector<float>(rows));
 
-    #pragma omp parallel for collapse(2)
+    #pragma omp for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
+            // #pragma omp atomic
             transposed[j][i] = matrix[i][j];
         }
     }
@@ -261,10 +262,11 @@ vector<vector<float>> multiply(const vector<vector<float>>& A, const vector<vect
 
     vector<vector<float>> result(rows, vector<float>(cols, 0.0f));
 
-    #pragma omp parallel for collapse(2)
+    #pragma omp for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
             for (int k = 0; k < inner; ++k) {
+                #pragma omp atomic
                 result[i][j] += A[i][k] * B[k][j];
             }
         }
@@ -278,9 +280,10 @@ vector<float> computeColumnMeans(const vector<vector<float>>& matrix) {
     int cols = matrix[0].size();
     vector<float> means(cols, 0.0f);
 
-    #pragma omp parallel for
+    #pragma omp for collapse (1)
     for (int j = 0; j < cols; ++j) {
         for (int i = 0; i < rows; ++i) {
+            #pragma omp atomic
             means[j] += matrix[i][j];
         }
         means[j] /= rows;
@@ -294,9 +297,10 @@ vector<vector<float>> centerMatrix(const vector<vector<float>>& matrix, const ve
     int cols = matrix[0].size();
     vector<vector<float>> centered(rows, vector<float>(cols));
 
-    #pragma omp parallel for collapse(2)
+    #pragma omp for collapse(2)
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
+            // #pragma omp atomic
             centered[i][j] = matrix[i][j] - means[j];
         }
     }
