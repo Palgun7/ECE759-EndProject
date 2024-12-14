@@ -1,5 +1,5 @@
 #include <cuda_runtime.h>
-#include <stdio.h>
+#include <stdio.h>   
 #include <math.h>
 
 __global__ void compute_mean(const float *vec, float *mean, int size) {
