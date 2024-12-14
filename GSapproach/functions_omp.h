@@ -1,5 +1,5 @@
-#ifndef LAB2_OMP_H
-#define LAB2_OMP_H
+#ifndef FUNCTIONS_OMP_H
+#define FUNCTIONS_OMP_H
 
 
 /*
