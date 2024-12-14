@@ -19,7 +19,7 @@ module load nvidia/cuda/11.8.0
 
 nvcc task2.cu pca_cuda.cu -o task2 -std=c++17
 
-./task 256 16
+./task 400 20
 
 # for ((i=10; i<30; i++)); do
 # 	N=$((2 ** i))
