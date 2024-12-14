@@ -419,7 +419,7 @@ std::vector<float> pca(vector<vector<float>> imageMatrix, int blockSize, int ima
     // Center the data
     std::vector<float> columnMeans;
     computeColumnMeansCUDA(imageMatrix, columnMeans);
-    auto centered = centerMatrixCUDA(imageMatrix, columnMeans);
+    auto centered = centerMatrixCUDA(imageMatrix, columnMeans);    
 
     // Compute covariance matrix
     std::vector<std::vector<float>> transposed;
