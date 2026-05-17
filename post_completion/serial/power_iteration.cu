@@ -14,6 +14,8 @@
 using namespace std::chrono;
 
 #define BLOCK_DIM 1024
+#define MAX_ITER 100000
+#define TOLERANCE 1e-6
 
 __global__ void matVec_kernel(float* matrix, float* b, float* b_next, int rows, int cols) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -199,7 +201,7 @@ void normalizeDiffSumGPU(
 }
 
 
-void powerIteration_gpu(float* matrix, float* b, float* b_next, int rows, int cols, float* eigen_value, int maxIter = 100000, float tol = 1e-6) {
+int powerIteration_gpu(float* matrix, float* b, float* b_next, int rows, int cols, float* eigen_value, int maxIter = MAX_ITER, float tol = TOLERANCE) {
     int N = rows;
     // for timing purpose
     cudaEvent_t start, stop;
@@ -228,15 +230,16 @@ void powerIteration_gpu(float* matrix, float* b, float* b_next, int rows, int co
     unsigned int numThreadsPerBlock = BLOCK_DIM;
     unsigned int numBLocks = (N + numThreadsPerBlock - 1)/numThreadsPerBlock;
 
+    int converged_iter = maxIter;
     cudaEventRecord(start);
     // Calculate on the GPU
     for (int iter = 0; iter < maxIter; ++iter) {
 
         // (1) b_next = A * b
         matVec_kernel<<<numBLocks, BLOCK_DIM>>>(matrix_d, b_d, b_next_d, rows, cols);
-        
-        
-        // Reduction Kernel -> sum squared 
+
+
+        // Reduction Kernel -> sum squared
         squaredSumGPU(b_next_d, N, normSq_d, scratchA_d, scratchB_d);
 
         // fused: Element-wise norm + Element-wise abs_diff
@@ -249,7 +252,7 @@ void powerIteration_gpu(float* matrix, float* b, float* b_next, int rows, int co
         // Compare diff & repeat
         float h_diff;
         cudaMemcpy(&h_diff, diffSum_d, sizeof(float), cudaMemcpyDeviceToHost);
-        if (h_diff < tol) break;
+        if (h_diff < tol) { converged_iter = iter + 1; break; }
     }
     cudaDeviceSynchronize();
     cudaEventRecord(stop);
@@ -282,14 +285,14 @@ void powerIteration_gpu(float* matrix, float* b, float* b_next, int rows, int co
         }
     }
     *eigen_value = eigenvalue;
-    
 
+    return converged_iter;
 }
 
 
 // Function to perform power iteration to find the largest eigenvalue and eigenvector
-void powerIteration_cpu(float* matrix, float* b, float* b_next, int N, float* eigen_value, int maxIter = 100000, float tol = 1e-6) {
-
+int powerIteration_cpu(float* matrix, float* b, float* b_next, int N, float* eigen_value, int maxIter = MAX_ITER, float tol = TOLERANCE) {
+    int converged_iter = maxIter;
     for (int iter = 0; iter < maxIter; ++iter) {
         memset(b_next, 0, N * sizeof(float));
 
@@ -316,6 +319,7 @@ void powerIteration_cpu(float* matrix, float* b, float* b_next, int N, float* ei
             diff += fabsf(b_next[i] - b[i]);
         }
         if (diff < tol) {
+            converged_iter = iter + 1;
             break;
         }
 
@@ -330,7 +334,8 @@ void powerIteration_cpu(float* matrix, float* b, float* b_next, int N, float* ei
             *eigen_value += b_next[i] * matrix[i * N + j] * b_next[j];
         }
     }
-    
+
+    return converged_iter;
 }
 
 int main(int argc, char* argv[]) {
@@ -371,14 +376,15 @@ int main(int argc, char* argv[]) {
     duration<double, std::milli> duration_sec;
 
     //////////////////////////////////////
-    start_cpu = high_resolution_clock::now(); 
-    powerIteration_cpu(matrix, b, b_next, N, &eigen_value);
-    end_cpu = high_resolution_clock::now(); 
+    start_cpu = high_resolution_clock::now();
+    int cpu_iters = powerIteration_cpu(matrix, b, b_next, N, &eigen_value);
+    end_cpu = high_resolution_clock::now();
     //////////////////////////////////////
 
     duration_sec = std::chrono::duration_cast<duration<double, std::milli>>(end_cpu - start_cpu);
     std::cout << "Total CPU time: " << duration_sec.count() << "ms\n";
     std::cout << "Eigenvalue: " << eigen_value << std::endl;
+    std::cout << "Iterations: " << cpu_iters << std::endl;
 
     // ######################### vector addition on GPU #########################
     // Re-initialize host inputs (CPU run mutated b and b_next)
@@ -394,7 +400,7 @@ int main(int argc, char* argv[]) {
 
     // //////////////////////////////////////
     cudaEventRecord(start_gpu);
-    powerIteration_gpu(matrix, b, b_next, rows, cols, &eigen_value);
+    int gpu_iters = powerIteration_gpu(matrix, b, b_next, rows, cols, &eigen_value);
     cudaEventRecord(stop_gpu);
     cudaEventSynchronize(stop_gpu);
     // //////////////////////////////////////
@@ -404,6 +410,7 @@ int main(int argc, char* argv[]) {
     cudaEventElapsedTime(&ms, start_gpu, stop_gpu);
     std::cout << "Total GPU time: " << ms << "ms\n";
     std::cout << "Eigenvalue: " << eigen_value << std::endl;
+    std::cout << "Iterations: " << gpu_iters << std::endl;
 
     // free host memory
     free(matrix);
