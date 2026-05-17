@@ -339,6 +339,8 @@ int main(int argc, char* argv[]) {
 
     // Declare the host arrays
     unsigned int N = (argc > 1) ? atoi(argv[1]) : (1024);
+    int rows = N;
+    int cols = N;
     float *matrix = (float*)malloc(N * N * sizeof(float));
     float *b = (float*)malloc(N * sizeof(float));
     float *b_next = (float*)malloc(N * sizeof(float));
@@ -385,27 +387,28 @@ int main(int argc, char* argv[]) {
 
     
     
-    // cudaEvent_t start_gpu;
-    // cudaEvent_t stop_gpu;
-    // cudaEventCreate(&start_gpu);
-    // cudaEventCreate(&stop_gpu);
+    cudaEvent_t start_gpu;
+    cudaEvent_t stop_gpu;
+    cudaEventCreate(&start_gpu);
+    cudaEventCreate(&stop_gpu);
 
     // //////////////////////////////////////
-    // cudaEventRecord(start_gpu);
-    // matmul_gpu(A, B, C, N);
-    // cudaEventRecord(stop_gpu);
-    // cudaEventSynchronize(stop_gpu);
+    cudaEventRecord(start_gpu);
+    powerIteration_gpu(matrix, b, b_next, rows, cols, &eigen_value);
+    cudaEventRecord(stop_gpu);
+    cudaEventSynchronize(stop_gpu);
     // //////////////////////////////////////
 
     // // Get the elapsed time in milliseconds
-    // float ms;
-    // cudaEventElapsedTime(&ms, start_gpu, stop_gpu);
-    // std::cout << "Total GPU time: " << ms << "ms\n";
-    std::cout << "Eigenvalue: " << *eigen_value << std::endl;
+    float ms;
+    cudaEventElapsedTime(&ms, start_gpu, stop_gpu);
+    std::cout << "Total GPU time: " << ms << "ms\n";
+    std::cout << "Eigenvalue: " << eigen_value << std::endl;
 
     // free host memory
     free(matrix);
     free(b);
+    free(b_next);
 
     return 0;
 }
