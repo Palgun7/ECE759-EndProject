@@ -272,8 +272,8 @@ std::vector<std::vector<float>> reconstructFromPrincipalComponents(const std::ve
 
 int main(int argc, char* argv[]) {
     int imageWidth, imageHeight;
-    const char* inputFileName = "../data/man2.png";
-    const char* outputFileName = "../data/output_image.png";
+    const char* inputFileName = "../../PCA_CUDA/man2.png";
+    const char* outputFileName = "../../PCA_CUDA/output_image.png";
     const int blockSize = 16; // Example block size
 
     // Read the image
